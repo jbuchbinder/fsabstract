@@ -29,6 +29,10 @@ func (self *FSDummy) Configure(c map[string]string) {
 	}
 }
 
+func (self *FSDummy) Initialize() error {
+	return os.MkdirAll(self.BasePath, 0700)
+}
+
 func (self *FSDummy) Get(d FileStoreDescriptor) ([]byte, FileStoreLocation, error) {
 	// Find the pertinent FileStoreLocation
 	l, err := LocationForDriver(d, self.DriverName())
@@ -49,16 +53,16 @@ func (self *FSDummy) Get(d FileStoreDescriptor) ([]byte, FileStoreLocation, erro
 
 func (self *FSDummy) Put(d FileStoreDescriptor, c []byte) error {
 	// Create new location
+	fullPath := self.BasePath + string(os.PathSeparator) + "file_" + string(d.Id)
 	l := FileStoreLocation{
 		Id:       "", // dummy driver doesn't have a store name/id
 		Driver:   self.DriverName(),
 		Created:  time.Now(),
-		Location: "file_" + string(d.Id), // not very creative
+		Location: fullPath,
 	}
 
 	// Push out to filesystem
-	fullPath := self.BasePath + string(os.PathSeparator) + l.Location
-	err := ioutil.WriteFile(fullPath, c, 0777)
+	err := ioutil.WriteFile(l.Location, c, 0777)
 	if err != nil {
 		return err
 	}
@@ -78,8 +82,7 @@ func (self *FSDummy) Delete(d FileStoreDescriptor, l FileStoreLocation) error {
 	}
 
 	// Delete from disk
-	fullPath := self.BasePath + string(os.PathSeparator) + l.Location
-	err = os.Remove(fullPath)
+	err = os.Remove(l.Location)
 	if err != nil {
 		return err
 	}

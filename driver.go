@@ -15,6 +15,7 @@ var (
 type FileStoreDriver interface {
 	DriverName() string
 	Configure(map[string]string)
+	Initialize() error
 	Get(FileStoreDescriptor) ([]byte, FileStoreLocation, error)
 	Put(FileStoreDescriptor, []byte) error
 	Delete(FileStoreDescriptor, FileStoreLocation) error
