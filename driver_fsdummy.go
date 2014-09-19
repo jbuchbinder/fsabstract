@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+func init() {
+	FileStoreDriverMap["fsdummy"] = func() FileStoreDriver {
+		return new(FSDummy)
+	}
+}
+
 // FSDummy is a simple filesystem driver, set by a basepath, in which all
 // files are stored in a single directory. It doesn't scale, and should only
 // be used for testing or limited applications.
