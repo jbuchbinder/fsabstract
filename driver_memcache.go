@@ -18,18 +18,18 @@ func init() {
 // for anything other than testing, since memcache doesn't persist anywhere
 // besides memory.
 type FSMemcache struct {
-	Servers    string   `fsdconfig:"memcache.servers"`
+	Servers    string   `fsdconfig:"fs.memcache.servers"`
 	ServerList []string // populated by Servers
 
 	conn *memcache.Client
 }
 
 func (self *FSMemcache) DriverName() string {
-	return "fsdummy"
+	return "memcache"
 }
 
 func (self *FSMemcache) Configure(c map[string]string) {
-	if v, exists := c["memcache.servers"]; exists {
+	if v, exists := c["fs.memcache.servers"]; exists {
 		self.Servers = v
 		if v != "" {
 			self.ServerList = strings.Split(self.Servers, ",")

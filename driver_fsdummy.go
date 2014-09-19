@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	FileStoreDriverMap["fsdummy"] = func() FileStoreDriver {
+	FileStoreDriverMap["dummy"] = func() FileStoreDriver {
 		return new(FSDummy)
 	}
 }
@@ -16,15 +16,15 @@ func init() {
 // files are stored in a single directory. It doesn't scale, and should only
 // be used for testing or limited applications.
 type FSDummy struct {
-	BasePath string `fsdconfig:"fsdummy.basepath"`
+	BasePath string `fsdconfig:"fs.dummy.basepath"`
 }
 
 func (self *FSDummy) DriverName() string {
-	return "fsdummy"
+	return "dummy"
 }
 
 func (self *FSDummy) Configure(c map[string]string) {
-	if v, exists := c["fsdummy.basePath"]; exists {
+	if v, exists := c["fs.dummy.basePath"]; exists {
 		self.BasePath = v
 	}
 }
