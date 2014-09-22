@@ -17,8 +17,8 @@ type FileStoreDriver interface {
 	Configure(map[string]string)
 	Initialize() error
 	Get(FileStoreDescriptor) ([]byte, FileStoreLocation, error)
-	Put(FileStoreDescriptor, []byte) error
-	Delete(FileStoreDescriptor, FileStoreLocation) error
+	Put(FileStoreDescriptor, []byte) (FileStoreDescriptor, error)
+	Delete(FileStoreDescriptor, FileStoreLocation) (FileStoreDescriptor, error)
 }
 
 func GetDriver(driverName string) FileStoreDriver {

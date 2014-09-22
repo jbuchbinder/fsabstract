@@ -3,6 +3,7 @@ package fsabstract
 import (
 	"io/ioutil"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -24,7 +25,7 @@ func (self *FSDummy) DriverName() string {
 }
 
 func (self *FSDummy) Configure(c map[string]string) {
-	if v, exists := c["fs.dummy.basePath"]; exists {
+	if v, exists := c["fs.dummy.basepath"]; exists {
 		self.BasePath = v
 	}
 }
@@ -41,7 +42,7 @@ func (self *FSDummy) Get(d FileStoreDescriptor) ([]byte, FileStoreLocation, erro
 	}
 
 	// Retrieve actual file data from disk
-	fullPath := self.BasePath + string(os.PathSeparator) + l.Location
+	fullPath := /* self.BasePath + string(os.PathSeparator) + */ l.Location
 	c, err := ioutil.ReadFile(fullPath)
 	if err != nil {
 		return nil, l, err
@@ -51,9 +52,12 @@ func (self *FSDummy) Get(d FileStoreDescriptor) ([]byte, FileStoreLocation, erro
 	return c, l, nil
 }
 
-func (self *FSDummy) Put(d FileStoreDescriptor, c []byte) error {
+func (self *FSDummy) Put(d FileStoreDescriptor, c []byte) (FileStoreDescriptor, error) {
+	// Updated copy of descriptor
+	dU := d
+
 	// Create new location
-	fullPath := self.BasePath + string(os.PathSeparator) + "file_" + string(d.Id)
+	fullPath := self.BasePath + string(os.PathSeparator) + "file_" + strconv.FormatInt(dU.Id, 16) // hex
 	l := FileStoreLocation{
 		Id:       "", // dummy driver doesn't have a store name/id
 		Driver:   self.DriverName(),
@@ -64,32 +68,37 @@ func (self *FSDummy) Put(d FileStoreDescriptor, c []byte) error {
 	// Push out to filesystem
 	err := ioutil.WriteFile(l.Location, c, 0777)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Append location
-	d.Location = append(d.Location, l)
+	if dU.Location == nil {
+		dU.Location = make([]FileStoreLocation, 0)
+	}
+	dU.Location = append(d.Location, l)
 
 	// No errors, send back
-	return nil
+	return dU, nil
 }
 
-func (self *FSDummy) Delete(d FileStoreDescriptor, l FileStoreLocation) error {
+func (self *FSDummy) Delete(d FileStoreDescriptor, l FileStoreLocation) (FileStoreDescriptor, error) {
+	dU := d
+
 	// Find the pertinent FileStoreLocation
 	l, err := LocationForDriver(d, self.DriverName())
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Delete from disk
 	err = os.Remove(l.Location)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Remove from mapping
-	RemoveLocation(d, l)
+	RemoveLocation(dU, l)
 
 	// No errors, send back
-	return nil
+	return dU, nil
 }

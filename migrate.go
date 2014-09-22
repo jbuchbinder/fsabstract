@@ -4,36 +4,37 @@ import (
 	"errors"
 )
 
-func Migrate(f FileStoreDescriptor, locFrom, locTo FileStoreLocation) error {
+func Migrate(f FileStoreDescriptor, locFrom, locTo FileStoreLocation) (FileStoreDescriptor, error) {
 	// Migrate file described by f from one location to another
+	fU := f
 
 	// Retrieve drivers
 	dFrom := GetDriver(locFrom.Driver)
 	if dFrom == nil {
-		return errors.New("Could not instantiate driver " + locFrom.Driver)
+		return fU, errors.New("Could not instantiate driver " + locFrom.Driver)
 	}
 	dTo := GetDriver(locTo.Driver)
 	if dTo == nil {
-		return errors.New("Could not instantiate driver " + locTo.Driver)
+		return fU, errors.New("Could not instantiate driver " + locTo.Driver)
 	}
 
 	// Get file data
-	content, originalLocation, err := dFrom.Get(f)
+	content, originalLocation, err := dFrom.Get(fU)
 	if err != nil {
-		return err
+		return fU, err
 	}
 
 	// Put to destination driver
-	err = dTo.Put(f, content)
+	fU, err = dTo.Put(fU, content)
 	if err != nil {
-		return err
+		return fU, err
 	}
 
 	// Remove from source
-	err = dFrom.Delete(f, originalLocation)
+	fU, err = dFrom.Delete(fU, originalLocation)
 	if err != nil {
-		return err
+		return fU, err
 	}
 
-	return nil
+	return fU, nil
 }

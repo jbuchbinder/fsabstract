@@ -28,6 +28,15 @@ type FileStoreDescriptor struct {
 	Location []FileStoreLocation `json:"location"`
 }
 
+// ToString handles JSON serialization transparently.
+func (self *FileStoreDescriptor) ToString() string {
+	b, err := json.Marshal(self)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
 type FileStoreLocation struct {
 	// Id represents the identification of the store in which this
 	// driver has stored the instance of the file. For example, for an
@@ -46,7 +55,7 @@ type FileStoreLocation struct {
 }
 
 // ToString handles JSON serialization transparently.
-func (self *FileStoreDescriptor) ToString() string {
+func (self *FileStoreLocation) ToString() string {
 	b, err := json.Marshal(self)
 	if err != nil {
 		return ""

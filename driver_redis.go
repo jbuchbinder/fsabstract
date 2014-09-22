@@ -84,15 +84,17 @@ func (self *FSRedis) Get(d FileStoreDescriptor) ([]byte, FileStoreLocation, erro
 	return c, l, nil
 }
 
-func (self *FSRedis) Put(d FileStoreDescriptor, c []byte) error {
+func (self *FSRedis) Put(d FileStoreDescriptor, c []byte) (FileStoreDescriptor, error) {
+	dU := d
+
 	// RW connection
 	conn, err := redis.NewSynchClientWithSpec(self.getConnection(REDIS_READWRITE).connspec)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Create new location
-	k := "fs_" + string(d.Id) + "_" + d.Name
+	k := "fs_" + strconv.FormatInt(d.Id, 16) + "_" + dU.Name
 	l := FileStoreLocation{
 		Id:       self.RwServer, // store server name, in case of migration
 		Driver:   self.DriverName(),
@@ -103,34 +105,39 @@ func (self *FSRedis) Put(d FileStoreDescriptor, c []byte) error {
 	// Push out to filesystem
 	err = conn.Set(k, c)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Append location
-	d.Location = append(d.Location, l)
+	if dU.Location == nil {
+		dU.Location = make([]FileStoreLocation, 0)
+	}
+	dU.Location = append(dU.Location, l)
 
 	// No errors, send back
-	return nil
+	return dU, nil
 }
 
-func (self *FSRedis) Delete(d FileStoreDescriptor, l FileStoreLocation) error {
+func (self *FSRedis) Delete(d FileStoreDescriptor, l FileStoreLocation) (FileStoreDescriptor, error) {
+	dU := d
+
 	// RW connection
 	conn, err := redis.NewSynchClientWithSpec(self.getConnection(REDIS_READWRITE).connspec)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Delete from disk
 	_, err = conn.Del(l.Location)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Remove from mapping
-	RemoveLocation(d, l)
+	RemoveLocation(dU, l)
 
 	// No errors, send back
-	return nil
+	return dU, nil
 }
 
 func (self *FSRedis) getConnection(write bool) redisConnection {

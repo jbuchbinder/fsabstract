@@ -3,6 +3,7 @@ package fsabstract
 import (
 	"errors"
 	memcache "github.com/bradfitz/gomemcache/memcache"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -66,9 +67,11 @@ func (self *FSMemcache) Get(d FileStoreDescriptor) ([]byte, FileStoreLocation, e
 	return c.Value, l, nil
 }
 
-func (self *FSMemcache) Put(d FileStoreDescriptor, c []byte) error {
+func (self *FSMemcache) Put(d FileStoreDescriptor, c []byte) (FileStoreDescriptor, error) {
+	dU := d
+
 	// Create new location
-	k := "fs_" + string(d.Id) + "_" + d.Name
+	k := "fs_" + strconv.FormatInt(dU.Id, 16) + "_" + dU.Name
 	l := FileStoreLocation{
 		Id:       "", // dummy driver doesn't have a store name/id
 		Driver:   self.DriverName(),
@@ -79,32 +82,37 @@ func (self *FSMemcache) Put(d FileStoreDescriptor, c []byte) error {
 	// Push out to filesystem
 	err := self.conn.Set(&memcache.Item{Key: k, Value: c})
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Append location
-	d.Location = append(d.Location, l)
+	if dU.Location == nil {
+		dU.Location = make([]FileStoreLocation, 0)
+	}
+	dU.Location = append(dU.Location, l)
 
 	// No errors, send back
-	return nil
+	return dU, nil
 }
 
-func (self *FSMemcache) Delete(d FileStoreDescriptor, l FileStoreLocation) error {
+func (self *FSMemcache) Delete(d FileStoreDescriptor, l FileStoreLocation) (FileStoreDescriptor, error) {
+	dU := d
+
 	// Find the pertinent FileStoreLocation
-	l, err := LocationForDriver(d, self.DriverName())
+	l, err := LocationForDriver(dU, self.DriverName())
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Delete from disk
 	err = self.conn.Delete(l.Location)
 	if err != nil {
-		return err
+		return dU, err
 	}
 
 	// Remove from mapping
-	RemoveLocation(d, l)
+	RemoveLocation(dU, l)
 
 	// No errors, send back
-	return nil
+	return dU, nil
 }
