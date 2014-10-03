@@ -2,4 +2,11 @@ language: go
 go:
   - 1.1
   - 1.2
+  - 1.3
   - tip
+  - release
+script:
+  - go get -d
+  - go build -v
+  - go test -v ./...
+  - ( cd fsdaemon && go get -d && go build -v )
